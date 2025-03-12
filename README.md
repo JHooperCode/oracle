@@ -9,6 +9,7 @@ run bot_base.py as the main file:
 
 A basic chat loop is implemented.  You can enter 'goodbye' to quit.
 
+
 ## Changelog
 - 0.1.0: Initial release
 
