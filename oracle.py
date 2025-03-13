@@ -6,6 +6,9 @@ import langgraph.graph as lg
 import langgraph.graph.message as lgm
 import langchain_ollama as lo
 import textwrap as tw
+import pydantic as pyd
+import fastapi as fapi
+import contextlib as cl
 
 
 def model_factory(
@@ -97,53 +100,106 @@ class generic_chat_node:
         return {"messages": self.llm.invoke(state["messages"])}
 
 
-if __name__ == "__main__":
-    print("Welcome to the base of the chatbot.")
+class ChatInput(pyd.BaseModel):
+    message: str
 
-    de.load_dotenv()
-    graph_builder = lg.StateGraph(State)
-    chatnode = generic_chat_node(
-        interface="ChatOllama",
-        model="mistral_nemo_conservative",
-        api_key=None,
-        endpoint=None,
-        temperature=0.5,
-        num_predict=1500,
-    )
-    graph_builder.add_node("chatnode", chatnode.get_response)
-    graph_builder.add_edge(lg.START, "chatnode")
-    graph_builder.add_edge("chatnode", lg.END)
-    graph = graph_builder.compile()
 
-    def stream_graph_updates(user_input: str):
-        for event in graph.stream(
-            {"messages": [{"role": "user", "content": user_input}]}
+class GraphManager:
+    def __init__(self):
+        self.graph = None
+
+    def initialize_graph(self):
+        de.load_dotenv()
+        graph_builder = lg.StateGraph(State)
+        chatnode = generic_chat_node(
+            interface="ChatOllama",
+            model="mistral_nemo_conservative",
+            api_key=None,
+            endpoint=None,
+            temperature=0.5,
+            num_predict=1500,
+        )
+        graph_builder.add_node("chatnode", chatnode.get_response)
+        graph_builder.add_edge(lg.START, "chatnode")
+        graph_builder.add_edge("chatnode", lg.END)
+        self.graph = graph_builder.compile()
+        return self.graph
+
+    def free_graph_resources(self):
+        pass  # For now
+
+
+graph_manager = GraphManager()
+
+
+@cl.asynccontextmanager
+async def service_lifecycle(app: fapi.FastAPI):
+    """
+    Lifecycle context for the oracle service.
+    """
+    # Startup
+    graph_manager.initialize_graph()
+
+    # Run
+    yield
+
+    # Shutdown
+    graph_manager.free_graph_resources()
+
+
+app = fapi.FastAPI(lifespan=service_lifecycle)
+
+
+@app.post("/chat")
+async def chat_endpoint(chat_input: ChatInput):
+    try:
+        responses = []
+        for event in graph_manager.graph_stream(
+            {"messages": [{"role": "user", "content": chat_input.message}]}
         ):
-            {"messages": [{"role": "user", "content": user_input}]}
             for value in event.values():
-                print("\n[Assistant]")
-                print(
-                    tw.fill(
-                        value["messages"].content,
-                        width=120,
-                        initial_indent="    ",
-                        subsequent_indent="        ",
-                        replace_whitespace=False,
-                    )
-                )
+                responses.append(value["messages"].content)
+        return {"responses": responses[0] if responses else "..."}
+    except Exception as err:
+        raise fapi.HTTPException(status_code=500, detail=str(err))
 
-    while True:
-        try:
-            user_input = input(f"\n[User]  ")
-            if user_input.lower() in ["quit", "exit", "q", "bye", "goodbye"]:
-                print("Goodbye!")
-                break
-            stream_graph_updates(user_input)
-        except:
-            # fallback if input() is not available
-            user_input = (
-                "How much wood could a woodchuck chuck if a woodchuck had a chainsaw?"
-            )
-            print("User: " + user_input)
-            stream_graph_updates(user_input)
-            break
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0", port=8000)
+
+    # print("Welcome to the base of the chatbot.")
+
+    # def stream_graph_updates(user_input: str):
+    #     for event in graph.stream(
+    #         {"messages": [{"role": "user", "content": user_input}]}
+    #     ):
+    #         {"messages": [{"role": "user", "content": user_input}]}
+    #         for value in event.values():
+    #             print("\n[Assistant]")
+    #             print(
+    #                 tw.fill(
+    #                     value["messages"].content,
+    #                     width=120,
+    #                     initial_indent="    ",
+    #                     subsequent_indent="        ",
+    #                     replace_whitespace=False,
+    #                 )
+    #             )
+
+    # while True:
+    #     try:
+    #         user_input = input(f"\n[User]  ")
+    #         if user_input.lower() in ["quit", "exit", "q", "bye", "goodbye"]:
+    #             print("Goodbye!")
+    #             break
+    #         stream_graph_updates(user_input)
+    #     except:
+    #         # fallback if input() is not available
+    #         user_input = (
+    #             "How much wood could a woodchuck chuck if a woodchuck had a chainsaw?"
+    #         )
+    #         print("User: " + user_input)
+    #         stream_graph_updates(user_input)
+    #         break
