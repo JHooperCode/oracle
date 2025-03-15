@@ -9,6 +9,7 @@ import textwrap as tw
 import pydantic as pyd
 import fastapi as fapi
 import contextlib as cl
+from fastapi.middleware.cors import CORSMiddleware
 
 
 def model_factory(
@@ -149,18 +150,31 @@ async def service_lifecycle(app: fapi.FastAPI):
 
 app = fapi.FastAPI(lifespan=service_lifecycle)
 
+# Add after creating the FastAPI app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your frontend's domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.post("/chat")
 async def chat_endpoint(chat_input: ChatInput):
     try:
+        if not graph_manager.graph:
+            raise ValueError("Graph not initialized")
+
         responses = []
-        for event in graph_manager.graph_stream(
+        for event in graph_manager.graph.stream(
             {"messages": [{"role": "user", "content": chat_input.message}]}
         ):
             for value in event.values():
                 responses.append(value["messages"].content)
         return {"responses": responses[0] if responses else "..."}
     except Exception as err:
+        print(f"Error in chat endpoing: {str(err)}")
         raise fapi.HTTPException(status_code=500, detail=str(err))
 
 

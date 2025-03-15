@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
+    <title>Chat with Oracle</title>
+    <link rel="stylesheet" href="oracle_styles.css">
+</head>
+<body>
+    <div id="sidebar">
+        <h2><center>Additional</center></h2>
+        <button class="sidebar_button" id="sidebar_b1">One</button>
+        <button class="sidebar_button" id="sidebar_b2">Two</button>
+        <button class="sidebar_button" id="sidebar_b3">Thr33</button>
+    </div>
+    <div id="chat-container"></div>
+    <div id="input-container">
+        <textarea id="user-input" placeholder="Beseech the powers here..." autocomplete="off" rows=4></textarea>
+        <button class = "submit_button" id="send_button" onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+
+        // Handle Enter key
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessageToChat('user', message);
+            userInput.value = '';
+
+            try {
+                const response = await fetch('http://localhost:8000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                // Add assistant's response to chat
+                addMessageToChat('assistant', data.responses);
+            } catch (error) {
+                console.error('Error:', error);
+                addMessageToChat('assistant', 'Sorry, there was an error processing your request.');
+            }
+        }
+
+        function addMessageToChat(role, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
