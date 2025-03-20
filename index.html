@@ -7,65 +7,32 @@
     <link rel="stylesheet" href="oracle_styles.css">
 </head>
 <body>
-    <div id="sidebar">
-        <h2><center>Additional</center></h2>
-        <button class="sidebar_button" id="sidebar_b1">One</button>
-        <button class="sidebar_button" id="sidebar_b2">Two</button>
-        <button class="sidebar_button" id="sidebar_b3">Thr33</button>
+    <div class="background-grid">
+        <div class="left-sidebar">
+            <h2><center>Conversations</center></h2>
+            <div class="button_column">
+                <button class="column_button" id="sidebar_b1">One</button>
+                <button class="column_button" id="sidebar_b2">Two</button>
+                <button class="column_button" id="sidebar_b3">Thr33</button>
+            </div>
+            <div class="input-name">
+                <input type="text" id="user-name" placeholder="Username" autocomplete="off">
+                <button class="submit_button" id="name_button" onclick="UserAccess.initialize_user(document.getElementById('user-name').value)">Submit</button>
+            </div>
+            <div class="chat-control">
+                <button class="submit_button" id="clear_button" onclick="clearChat()">Clear Chat Display</button>
+                <button class="submit_button" id="refresh_button" onclick="refreshChat()">Refresh Display</button>
+            </div>
+        </div>
+        <div class="conversation-area">
+            <div id="chat-container"></div>
+            <div class="input-container">
+                <textarea id="user-input" placeholder="Beseech the powers here..." autocomplete="off" rows=3></textarea>
+                <button class = "submit_button" id="input_button" onclick="sendMessage(document.getElementById('user-input').value)">Send</button>
+            </div>        
+        </div>
     </div>
-    <div id="chat-container"></div>
-    <div id="input-container">
-        <textarea id="user-input" placeholder="Beseech the powers here..." autocomplete="off" rows=4></textarea>
-        <button class = "submit_button" id="send_button" onclick="sendMessage()">Send</button>
-    </div>
-
-    <script>
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-
-        // Handle Enter key
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (!message) return;
-
-            // Add user message to chat
-            addMessageToChat('user', message);
-            userInput.value = '';
-
-            try {
-                const response = await fetch('http://localhost:8000/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                const data = await response.json();
-                
-                // Add assistant's response to chat
-                addMessageToChat('assistant', data.responses);
-            } catch (error) {
-                console.error('Error:', error);
-                addMessageToChat('assistant', 'Sorry, there was an error processing your request.');
-            }
-        }
-
-        function addMessageToChat(role, content) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}-message`;
-            messageDiv.textContent = content;
-            chatContainer.appendChild(messageDiv);
-            
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+    <script type="text/javascript" src="oracle.js">
     </script>
 </body>
 </html>

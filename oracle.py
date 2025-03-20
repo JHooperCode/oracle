@@ -4,6 +4,7 @@ import os
 import dotenv as de
 import langgraph.graph as lg
 import langgraph.graph.message as lgm
+import langgraph.checkpoint.memory as lcm
 import langchain_ollama as lo
 import textwrap as tw
 import pydantic as pyd
@@ -105,9 +106,31 @@ class ChatInput(pyd.BaseModel):
     message: str
 
 
+class UserManager:
+    def generate_user_thread_index(cls, user_id: str):
+        # Eventually this would involve a DB lookup to make sure we generate a thread not already stored.
+        # For now, we'll just choose "42"
+        return 42
+
+    def __init__(self, user_id: str, selected_thread: int = None):
+        self.user_id = user_id  # Unique user key.
+        if selected_thread is not None:
+            self.current_user_thread = selected_thread
+        else:
+            self.current_user_thread = cls.generate_user_thread_index(user_id)
+        self.thread_id = self.user_id + "_" + str(self.current_user_thread)
+
+    def get_thread_id(self):
+        return self.thread_id
+
+
+config = {"configurable": {"thread_id": 1}}
+
+
 class GraphManager:
     def __init__(self):
         self.graph = None
+        self.memory = lcm.MemorySaver()
 
     def initialize_graph(self):
         de.load_dotenv()
@@ -123,7 +146,7 @@ class GraphManager:
         graph_builder.add_node("chatnode", chatnode.get_response)
         graph_builder.add_edge(lg.START, "chatnode")
         graph_builder.add_edge("chatnode", lg.END)
-        self.graph = graph_builder.compile()
+        self.graph = graph_builder.compile(checkpointer=self.memory)
         return self.graph
 
     def free_graph_resources(self):
@@ -160,6 +183,19 @@ app.add_middleware(
 )
 
 
+@app.post("/initialize")
+async def initialize_endpoint(user_identifier: str = fapi.Query(...)):
+    try:
+        current_user = UserManager(user_identifier, selected_thread=1)
+        if not current_user:
+            raise ValueError("User not found")
+        return {"success": f"User {user_identifier} logged in!"}
+
+    except Exception as err:
+        print(f"Error setting user {str(err)}")
+        raise fapi.HTTPException(status_code=500, detail=str(err))
+
+
 @app.post("/chat")
 async def chat_endpoint(chat_input: ChatInput):
     try:
@@ -168,13 +204,31 @@ async def chat_endpoint(chat_input: ChatInput):
 
         responses = []
         for event in graph_manager.graph.stream(
-            {"messages": [{"role": "user", "content": chat_input.message}]}
+            {"messages": [{"role": "user", "content": chat_input.message}]},
+            config,
+            # stream_mode="values",
         ):
             for value in event.values():
                 responses.append(value["messages"].content)
         return {"responses": responses[0] if responses else "..."}
     except Exception as err:
-        print(f"Error in chat endpoing: {str(err)}")
+        print(f"Error in chat endpoint: {str(err)}")
+        raise fapi.HTTPException(status_code=500, detail=str(err))
+
+
+@app.get("/get_conversation")
+async def get_conversation_endpoint():
+    try:
+        if not graph_manager.graph:
+            raise ValueError("Graph not initialized")
+
+        # Get the conversation history from the memory
+        conversation = []
+        if graph_manager.memory:
+            conversation = graph_manager.graph.get_state(config).values["messages"]
+            return conversation
+    except Exception as err:
+        print(f"Error retrieving conversation: {str(err)}")
         raise fapi.HTTPException(status_code=500, detail=str(err))
 
 
@@ -182,38 +236,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0", port=8000)
-
-    # print("Welcome to the base of the chatbot.")
-
-    # def stream_graph_updates(user_input: str):
-    #     for event in graph.stream(
-    #         {"messages": [{"role": "user", "content": user_input}]}
-    #     ):
-    #         {"messages": [{"role": "user", "content": user_input}]}
-    #         for value in event.values():
-    #             print("\n[Assistant]")
-    #             print(
-    #                 tw.fill(
-    #                     value["messages"].content,
-    #                     width=120,
-    #                     initial_indent="    ",
-    #                     subsequent_indent="        ",
-    #                     replace_whitespace=False,
-    #                 )
-    #             )
-
-    # while True:
-    #     try:
-    #         user_input = input(f"\n[User]  ")
-    #         if user_input.lower() in ["quit", "exit", "q", "bye", "goodbye"]:
-    #             print("Goodbye!")
-    #             break
-    #         stream_graph_updates(user_input)
-    #     except:
-    #         # fallback if input() is not available
-    #         user_input = (
-    #             "How much wood could a woodchuck chuck if a woodchuck had a chainsaw?"
-    #         )
-    #         print("User: " + user_input)
-    #         stream_graph_updates(user_input)
-    #         break
