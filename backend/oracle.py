@@ -5,11 +5,13 @@ import dotenv as de
 import langgraph.graph as lg
 import langgraph.graph.message as lgm
 import langgraph.checkpoint.memory as lcm
+import langchain_core.messages as lm
 import langchain_ollama as lo
 import textwrap as tw
 import pydantic as pyd
 import fastapi as fapi
 import contextlib as cl
+import json
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -225,8 +227,17 @@ async def get_conversation_endpoint():
         # Get the conversation history from the memory
         conversation = []
         if graph_manager.memory:
-            conversation = graph_manager.graph.get_state(config).values["messages"]
-            return conversation
+            current_state = graph_manager.graph.get_state(config)
+            if "messages" not in current_state.values:
+                return {
+                    "messages": [
+                        lm.AIMessage(
+                            content="I'm sorry, but I don't remember a previous conversation."
+                        )
+                    ]
+                }
+            else:
+                return current_state.values
     except Exception as err:
         print(f"Error retrieving conversation: {str(err)}")
         raise fapi.HTTPException(status_code=500, detail=str(err))
