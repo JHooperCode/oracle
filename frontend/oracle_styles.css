@@ -195,14 +195,16 @@ body {
     background-color: #7095af;
     color: #000000;
     margin-left: 0%;
-    width: 80%;
+    width: max-content;
+    max-width: 80%;
 }
 
 .assistant-message {
     background-color: #000217;
     color: #7095af;
     margin-left: 15%;
-    width: 80%;
+
+    max-width: 80%;
 }
 
 .error-message {
