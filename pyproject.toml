@@ -15,6 +15,7 @@ dependencies = [
     "langchain-openai>=0.3.8",
     "langgraph>=0.3.5",
     "langsmith>=0.3.13",
+    "ollama>=0.4.7",
     "pre-commit>=4.1.0",
     "python-dotenv>=1.0.1",
     "uvicorn>=0.34.0",
