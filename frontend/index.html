@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
+    <title>Chat with Oracle</title>
+    <link rel="stylesheet" href="oracle_styles.css">
+</head>
+<body>
+    <div class="background-grid">
+        <div class="left-sidebar">
+            <h2><center>Conversations</center></h2>
+            <div class="button_column">
+                <button class="column_button" id="sidebar_b1">One</button>
+                <button class="column_button" id="sidebar_b2">Two</button>
+                <button class="column_button" id="sidebar_b3">Thr33</button>
+            </div>
+            <div class="input-name">
+                <input type="text" id="user-name" placeholder="Username" autocomplete="off">
+                <button class="submit_button" id="name_button" onclick="UserAccess.initialize_user(document.getElementById('user-name').value)">Submit</button>
+            </div>
+            <div class="chat-control">
+                <button class="submit_button" id="clear_button" onclick="clearChat()">Clear Chat Display</button>
+                <button class="submit_button" id="refresh_button" onclick="refreshChat()">Refresh Display</button>
+            </div>
+        </div>
+        <div class="conversation-area">
+            <div id="chat-container"></div>
+            <div class="input-container">
+                <textarea id="user-input" placeholder="Beseech the powers here..." autocomplete="off" rows=3></textarea>
+                <button class = "submit_button" id="input_button" onclick="sendMessage(document.getElementById('user-input').value)">Send</button>
+            </div>        
+        </div>
+    </div>
+    <script type="text/javascript" src="oracle.js">
+    </script>
+</body>
+</html>
