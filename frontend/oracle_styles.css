@@ -88,7 +88,6 @@ body {
     margin-bottom: 10px;
 }
 
-
 #chat-container {
     flex-grow: 1;
     height: 78%;
@@ -111,18 +110,27 @@ body {
     display: flex;
     flex-direction: column;
 }
-.input-container{
+.input-container {
     display: flex;
-    flex-direction: row;
-    height: 18%;
+    flex-direction: column;
+    height: 15%;
     width: 98%;
     margin: 1%;
     margin-left: 0%;
     border: 5px solid #06092e;
     background-color: #010215;
     border-radius: 25px;
-    align-items: center;
+    align-items: left;
 }
+
+#input-text-entry {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    padding: 10px;
+    height: 80%;
+}
+
 #user-input {
     width: 85%;
     padding: 4px;
@@ -130,12 +138,41 @@ body {
     border-radius: 15px;
     border: 0px solid #9bc2f1;
     background-color:#152666;
-    color: #9bc2f1
+    color: #9bc2f1;
 }
+
 #input_button {
-    height: 40%;
+    height: 40px;
     width: 10%;
     margin: 1%;
+}
+
+#model_label {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    margin-left: 5%;
+    padding: 10px;
+    height: 10%;
+}
+
+#model-declaration {
+    padding: 4px;
+    margin: 2%;
+    border-radius: 15px;
+    width: 10%;
+    color: #2aa3d7;
+    padding-right: 0px;
+    margin-right: 0px;
+}
+
+#current-model-info {
+    color: #2aa3d7;
+    text-align: left;
+    margin-right: auto;
+    margin-left: 0px;
+    width: 90%;
 }
 
 #clear_button {
@@ -149,36 +186,9 @@ body {
     margin: 2%;
 }
 
-.submit_button {
-    background-color: #236ec9;
-    color: #000629;
-    border: 1%;
-    border-radius: 10px;
-    font-family: Arial, sans-serif;
-    font-size: 14pt;
-    font-weight: bold;
-    transition: all 0.1s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-
-}
-
-.submit_button:hover {
-    background-color: #2b7ee3;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.submit_button:active {
-    background-color: #000629;
-    color: #236ec9;
-    transform: translateY(2px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
 #user-input {
     font-size: 14pt;
 }
-
 
 .message {
     margin-bottom: 15px;
@@ -217,7 +227,7 @@ body {
 .submit_button {
     background-color: #236ec9;
     color: #000629;
-    border: none;
+    border: 1%;
     border-radius: 10px;
     font-family: Arial, sans-serif;
     font-size: 14pt;

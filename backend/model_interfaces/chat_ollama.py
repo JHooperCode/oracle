@@ -33,8 +33,15 @@ def build_ollama_chat_interface(
     api_key = "Ollama_Dont_Need_No_Stinking_API_Key"
     model_list = oll.list()
     try:
-        model_names = [model.model.split(":")[0] for model in oll.list().models]
-        #        model_names = [model_list.models.model for model_list in oll.list()]
+        model_full_names = [(model.model.split(":")) for model in oll.list().models]
+        model_names = [
+            (
+                model_name
+                if model_version == "latest"
+                else model_name + ":" + model_version
+            )
+            for model_name, model_version in model_full_names
+        ]
         if model_name not in model_names:
             raise ValueError(
                 f"The model {model_name} is not available on the Ollama server at {endpoint}."

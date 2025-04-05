@@ -10,7 +10,12 @@ import fastapi as fapi
 import contextlib as cl
 import backend.nodes as bn
 import backend.users as bu
+import os
 from fastapi.middleware.cors import CORSMiddleware
+import copy
+
+DEFAULT_MODEL = "llama3.2:1b"
+DEFAULT_INTERFACE = "ChatOllama"
 
 
 class OracleState(te.TypedDict):
@@ -28,13 +33,25 @@ class GraphManager:
     def __init__(self):
         self.graph = None
         self.memory = lcm.MemorySaver()
+        self.initial_environment = None
 
     def initialize_graph(self):
+        self.initial_environment = copy.deepcopy(os.environ)
         de.load_dotenv()
+        if os.getenv("MODEL") is None:
+            model = DEFAULT_MODEL
+        else:
+            model = os.getenv("MODEL")
+        if os.getenv("INTERFACE") is None:
+            interface = DEFAULT_INTERFACE
+        else:
+            interface = os.getenv("INTERFACE")
+
         graph_builder = lg.StateGraph(OracleState)
+        print(f"Initializing chat node with interface: {interface} and model: {model}")
         chatnode = bn.generic_chat_node(
-            interface="ChatOllama",
-            model="mistral_nemo_conservative",
+            interface=interface,
+            model=model,
             api_key=None,
             endpoint=None,
             temperature=0.5,
@@ -44,10 +61,13 @@ class GraphManager:
         graph_builder.add_edge(lg.START, "chatnode")
         graph_builder.add_edge("chatnode", lg.END)
         self.graph = graph_builder.compile(checkpointer=self.memory)
+        os.environ.clear()
+        os.environ.update(self.initial_environment)
         return self.graph
 
     def free_graph_resources(self):
-        pass  # For now
+        os.environ.clear()
+        os.environ.update(self.initial_environment)
 
 
 graph_manager = GraphManager()
@@ -135,6 +155,27 @@ async def get_conversation_endpoint():
                 return current_state.values
     except Exception as err:
         print(f"Error retrieving conversation: {str(err)}")
+        raise fapi.HTTPException(status_code=500, detail=str(err))
+
+
+@app.get("/get_model_info")
+async def get_model_info():
+    try:
+        if not graph_manager.graph:
+            print("Graph not initialized yet")
+            raise ValueError("Graph not initialized")
+
+        try:
+            chatnode = bn.generic_chat_node.get_instance()
+            model_name = chatnode.get_model_name()
+            model_type = chatnode.get_model_type()
+            print(f"Returning model info - name: {model_name}, type: {model_type}")
+            return {"model_name": model_name, "model_type": model_type}
+        except Exception as err:
+            print(f"Error getting chat node instance or model info: {str(err)}")
+            raise ValueError(f"Chat node error: {str(err)}")
+    except Exception as err:
+        print(f"Error getting model info: {str(err)}")
         raise fapi.HTTPException(status_code=500, detail=str(err))
 
 

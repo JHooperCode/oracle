@@ -109,3 +109,69 @@ refreshChat = async function() {
         addMessageToChat('error', 'Sorry, there was an error refreshing the conversation.');
     }
 }
+
+async function updateModelInfo() {
+    try {
+        console.log('Fetching model info...');
+        const response = await fetch('http://localhost:8000/get_model_info', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Server error:', errorData);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.detail}`);
+        }
+
+        const data = await response.json();
+        console.log('Received model info:', data);
+        const modelInfoElement = document.getElementById('current-model-info');
+        const elementId = modelInfoElement.id;
+        if (modelInfoElement) {
+            const modelInfo = document.createElement('h3');
+            modelInfo.textContent = `${data.model_name} (${data.model_type})`;
+            modelInfo.id = elementId;
+            modelInfoElement.replaceWith(modelInfo);
+        }
+    } catch (error) {
+        console.error('Error fetching model info:', error);
+        const modelInfoElement = document.getElementById('current-model-info');
+        if (modelInfoElement) {
+            modelInfoElement.textContent = 'Model info unavailable';
+        }
+    }
+}
+
+// Update model info when page loads and periodically check until successful
+document.addEventListener('DOMContentLoaded', async () => {
+    // Try immediately
+    await updateModelInfo();
+    
+    // If not successful, retry every 2 seconds for up to 30 seconds
+    let attempts = 0;
+    const maxAttempts = 15;
+    const interval = setInterval(async () => {
+        if (document.getElementById('current-model-info').textContent !== 'Model info unavailable' || attempts >= maxAttempts) {
+            clearInterval(interval);
+            return;
+        }
+        attempts++;
+        await updateModelInfo();
+    }, 2000);
+});
+
+// Update model info when user logs in
+UserAccess.initialize_user = (function() {
+    const original = UserAccess.initialize_user;
+    return async function() {
+        const result = await original.apply(this, arguments);
+        // Wait a short moment for the backend to initialize after login
+        setTimeout(async () => {
+            await updateModelInfo();
+        }, 1000);
+        return result;
+    };
+})();

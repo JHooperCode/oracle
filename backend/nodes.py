@@ -11,6 +11,12 @@ class generic_chat_node:
             cls._self._initialize(*args, **kwargs)
         return cls._self
 
+    @classmethod
+    def get_instance(cls):
+        if cls._self is None:
+            raise ValueError("Chat node not initialized")
+        return cls._self
+
     def _initialize(
         self,
         interface: str,

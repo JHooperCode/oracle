@@ -27,8 +27,14 @@
         <div class="conversation-area">
             <div id="chat-container"></div>
             <div class="input-container">
-                <textarea id="user-input" placeholder="Beseech the powers here..." autocomplete="off" rows=3></textarea>
-                <button class = "submit_button" id="input_button" onclick="sendMessage(document.getElementById('user-input').value)">Send</button>
+                <div id="input-text-entry">
+                    <textarea id="user-input" placeholder="Beseech the powers here..." autocomplete="off" rows=3></textarea>
+                    <button class = "submit_button" id="input_button" onclick="sendMessage(document.getElementById('user-input').value)">Send</button>
+                </div>
+                <div id="model_label">
+                    <h3 id="model-declaration">Current Model : </h3>
+                    <span id="current-model-info">Loading model info...</span>
+                </div>    
             </div>        
         </div>
     </div>
